@@ -1,0 +1,18 @@
+{
+  "name": "jobs2-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Authenticated MCP server for jobs2.graphai.eu job queries (Supabase, Redis, salary).",
+  "bin": {
+    "jobs2-mcp": "./src/stdio.mjs"
+  },
+  "scripts": {
+    "test": "node --test src/*.test.mjs",
+    "start": "node src/stdio.mjs",
+    "http": "node src/http.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
