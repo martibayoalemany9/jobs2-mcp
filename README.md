@@ -136,8 +136,9 @@ Claude Desktop uses `claude_desktop_config.json`. VS Code Copilot uses `.vscode/
 
 ## Sentry and Aikido
 
-- Sentry: create project `jobs2-mcp`, set `SENTRY_DSN`. GitHub workflow `.github/workflows/ci.yml` runs tests.
-- Aikido: add GitHub repo `martibayoalemany9/jobs2-mcp` to group (same as jobs2, `179235` if the org allows). Workflow `.github/workflows/aikido.yml` uses `TOKEN_AIKIDO_CI_CD`.
+- GitHub: https://github.com/martibayoalemany9/jobs2-mcp
+- Sentry project **jobs2-mcp** exists in org `graphai-ou` (EU, `de.sentry.io`), project id `4512486877954128`. Set `SENTRY_DSN` on Vercel. SDK hook: `src/sentry.mjs`.
+- Aikido: GitHub secret `TOKEN_AIKIDO_CI_CD` is on this repo. Workflow `.github/workflows/aikido.yml` runs on `main`. `scan-release` CLI returns **402** on the current Aikido plan (`is_release_gating` is paid). Keep the GitHub App on group `179235` so SAST/SCA still ingest the public repo. `ci.yml` always runs `node --test`.
 
 ## Tests
 
