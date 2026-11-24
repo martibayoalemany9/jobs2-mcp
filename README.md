@@ -2,7 +2,9 @@
 
 Authenticated [Model Context Protocol](https://modelcontextprotocol.io) server for [jobs2.graphai.eu](https://jobs2.graphai.eu). Compatible with **Grok**, **OpenAI Codex**, Claude, Cursor, and any Streamable HTTP or stdio MCP client.
 
-The server **requires login**. Tool calls without a Bearer token return HTTP 401. A valid token with a too-cheap plan returns HTTP 402.
+The server **requires login or x402 payment**. `tools/list` without a Bearer token is HTTP 401. Tool calls without a token (or with a too-cheap plan) return an x402 `PaymentRequired` result (MCP `isError` + HTTP 402 `PAYMENT-REQUIRED`). Results are **Markdown tables** so Grok prints them as tables.
+
+**x402 credentials on this Mac:** there is no `X402_PAY_TO`, CDP API key, or funded USDC wallet in `~/.env`. Live Coinbase facilitator settlement cannot run until you set `X402_PAY_TO` (Base address that receives USDC). Until then the seller advertises Base Sepolia USDC quotes and accepts a **dev HMAC mock** payload (`payload.kind = jobs2-hmac`) for tests. Grok on this laptop uses the `local-operator` subscription sentinel and does not need to pay.
 
 Remote URL (after Vercel deploy): `https://mcp.jobs2.graphai.eu/mcp`  
 Setup UI: `https://jobs2.graphai.eu/mcp`  
@@ -29,10 +31,14 @@ Tokens are HMAC-signed (`JOBS2_MCP_SIGNING_SECRET`) with `email`, `plan`, and ex
 
 ## Tools
 
+Each tool returns a Markdown table (country, city, title, company, specialties, url; salary columns on `search_jobs_salary`).
+
 - `search_jobs` — `country` (ISO-2), `city`, `specialty`
 - `search_jobs_fast` — same filters, Redis
 - `search_jobs_salary` — same filters, includes `salary_min` / `salary_max` / `specialties`
 - `list_specialties`
+
+Grok (this Mac) is already registered in `~/.grok/config.toml` as `[mcp_servers.jobs2]` stdio. **Start a new Grok chat** so the process loads; this session started before the server existed. Then ask e.g. “call search_jobs for hardware in DE” and you should see a table.
 
 ## Deploy (Vercel webservice)
 
@@ -121,7 +127,7 @@ Claude Desktop uses `claude_desktop_config.json`. VS Code Copilot uses `.vscode/
 | **Revolut Pay** | Yes in principle (Merchant orders) | jobs2 currently **pauses** Revolut Pay (`REVOLUT_PAY_ENABLED`) because `/customers` was 500. Do not treat `payWithPopup` as live. |
 | **Stripe** | Yes (Checkout Sessions / Billing) | Live account previously **rejected charges**. `STRIPE_PAY_ENABLED` stays off until the account can charge. Stripe **does not** bill “MCP protocol”; it bills a product SKU. |
 | **NOWPayments** | Yes for **crypto** | [Recurring Payments API](https://nowpayments.io/blog/how-to-create-recurring-crypto-payments) (`POST /v1/subscriptions/plans`, 30-day interval, IPN). Good for €5/€10/€15 crypto SKUs. NOWPayments also ships `http://mcp.nowpayments.io/mcp` — that is **their** payment MCP, not a marketplace for ours. |
-| **x402** | Pay-**per-request**, not a calendar month | HTTP 402 + USDC (Coinbase facilitator, Vercel `x402-mcp`, AWS Marketplace AgentCore). Excellent for agents that will not create an account. **Does not replace** a €5/€10/€15 monthly SKU unless you meter usage to those amounts. We return 402 with a pointer to the jobs2 billing page; optional `paidTool` can be added later for USDC micropayments. |
+| **x402** | Pay-**per-request** USDC | Implemented on this MCP: unpaid `tools/call` → MCP `PaymentRequired` + HTTP `PAYMENT-REQUIRED`. Retry with `_meta["x402/payment"]` or `PAYMENT-SIGNATURE`. Live settlement needs `X402_PAY_TO` + Coinbase facilitator (`X402_FACILITATOR_URL`, default `https://x402.org/facilitator`). No CDP keys in this workspace; mock HMAC payments work in tests. |
 
 **Recommendation:** keep **Checkout.com** (and later Stripe/Revolut) for EUR monthly SKUs on jobs2; add **NOWPayments** for crypto monthly; use **x402** as an extra agent micropayment lane, not as the only subscription.
 

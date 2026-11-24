@@ -28,7 +28,7 @@ export async function handleJsonRpc(body, headers = {}) {
     if (method === "tools/call") {
       const name = body?.params?.name
       const args = body?.params?.arguments || {}
-      const result = await callTool(name, args, token)
+      const result = await callTool(name, args, token, body?.params || {}, headers)
       return { jsonrpc: "2.0", id, result }
     }
     if (method === "ping") {

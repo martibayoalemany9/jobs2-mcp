@@ -3,6 +3,7 @@ import test from "node:test"
 import { issueToken, verifyToken, authorize, AuthError } from "./auth.mjs"
 import { callTool } from "./tools.mjs"
 import { handleJsonRpc } from "./rpc.mjs"
+import { issueMockPayment } from "./x402.mjs"
 
 test("token round-trip for supabase plan", () => {
   const t = issueToken({ email: "martibayoalemany@gmail.com", plan: "mcp_supabase" })
@@ -25,29 +26,30 @@ test("supabase plan cannot call salary", () => {
   assert.throws(() => authorize(t, "search_jobs_salary"), (e) => e.status === 402)
 })
 
-test("search_jobs filters by country and specialty", async () => {
+test("search_jobs prints a markdown table", async () => {
   const t = issueToken({ email: "a@b.c", plan: "mcp_supabase" })
   const out = await callTool("search_jobs", { country: "DE", specialty: "hardware" }, t)
-  const data = JSON.parse(out.content[0].text)
-  assert.equal(data.store, "supabase")
-  assert.ok(data.jobs.some((j) => j.job_key === "de-ka-hw-1"))
-  assert.ok(!("salary_min" in data.jobs[0]))
+  const text = out.content[0].text
+  assert.match(text, /\| country \| city \| title \|/)
+  assert.match(text, /Karlsruhe/)
+  assert.match(text, /Hardware Engineer/)
+  assert.doesNotMatch(text, /72000/)
 })
 
-test("fast tool uses redis store", async () => {
+test("fast tool uses redis store in table meta", async () => {
   const t = issueToken({ email: "a@b.c", plan: "mcp_redis" })
   const out = await callTool("search_jobs_fast", { city: "Amsterdam" }, t)
-  const data = JSON.parse(out.content[0].text)
-  assert.equal(data.store, "redis")
-  assert.equal(data.jobs[0].city, "Amsterdam")
+  assert.match(out.content[0].text, /store: redis/)
+  assert.match(out.content[0].text, /Amsterdam/)
 })
 
-test("salary tool includes ranges and specialties", async () => {
+test("salary table includes ranges and specialties", async () => {
   const t = issueToken({ email: "a@b.c", plan: "mcp_salary" })
   const out = await callTool("search_jobs_salary", { specialty: "sap" }, t)
-  const data = JSON.parse(out.content[0].text)
-  assert.equal(data.jobs[0].salary_min, 55000)
-  assert.deepEqual(data.jobs[0].specialties, ["sap", "logistik"])
+  const text = out.content[0].text
+  assert.match(text, /salary_min/)
+  assert.match(text, /55000/)
+  assert.match(text, /sap, logistik/)
 })
 
 test("json-rpc tools/list requires login", async () => {
@@ -68,4 +70,24 @@ test("local-operator sentinel unlocks all tools", async () => {
   const s = verifyToken("local-operator")
   assert.equal(s.plan, "web_studio")
   authorize("local-operator", "search_jobs_salary")
+})
+
+test("unpaid tools/call returns x402 PaymentRequired", async () => {
+  const r = await handleJsonRpc({
+    jsonrpc: "2.0",
+    id: 9,
+    method: "tools/call",
+    params: { name: "search_jobs", arguments: { country: "DE" } },
+  }, {})
+  assert.equal(r.result.isError, true)
+  assert.equal(r.result.structuredContent.x402Version, 2)
+  assert.ok(r.result.structuredContent.accepts[0].amount)
+})
+
+test("mock x402 payment unlocks salary table", async () => {
+  const payment = issueMockPayment("search_jobs_salary", "0xpayer")
+  const out = await callTool("search_jobs_salary", { country: "DE" }, "", { _meta: { "x402/payment": payment } }, {})
+  assert.equal(out.isError, undefined)
+  assert.match(out.content[0].text, /\| country \|/)
+  assert.equal(out._meta["x402/payment-response"].success, true)
 })

@@ -6,7 +6,7 @@ function send(res, status, obj, extra = {}) {
   res.writeHead(status, {
     "content-type": "application/json",
     "access-control-allow-origin": "*",
-    "access-control-allow-headers": "authorization,content-type,x-jobs2-mcp-token",
+    "access-control-allow-headers": "authorization,content-type,x-jobs2-mcp-token,payment-signature,PAYMENT-SIGNATURE",
     "access-control-allow-methods": "GET,POST,OPTIONS",
     ...extra,
   })
@@ -41,9 +41,13 @@ export async function handleHttp(req, res) {
     send(res, 401, out)
     return
   }
-  if (out?.error?.data?.status === 402) {
+  const paid = out?.result?.structuredContent
+  if (out?.error?.data?.status === 402 || (out?.result?.isError && paid?.x402Version)) {
+    const { encodePaymentRequired } = await import("./x402.mjs")
+    const reqBody = paid || (await import("./x402.mjs")).paymentRequired("search_jobs", out?.error?.message || "Payment required")
     send(res, 402, out, {
-      "x-402-note": "Subscribe at https://jobs2.graphai.eu/?view=invoices — x402 per-call USDC is optional later.",
+      "PAYMENT-REQUIRED": encodePaymentRequired(reqBody),
+      "x-402-note": "Subscribe at https://jobs2.graphai.eu/?view=invoices or retry with PAYMENT-SIGNATURE / _meta x402/payment.",
     })
     return
   }

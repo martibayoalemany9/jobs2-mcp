@@ -37,6 +37,30 @@ const FIXTURES = [
     currency: "EUR",
     url: "https://jobs2.graphai.eu/jobs/es-bcn-sap-1",
   },
+  {
+    job_key: "de-ber-sw-1",
+    title: "Platform Engineer",
+    company: "Graphai Demo",
+    country_iso2: "DE",
+    city: "Berlin",
+    specialties: ["software", "cloud"],
+    salary_min: 80000,
+    salary_max: 110000,
+    currency: "EUR",
+    url: "https://jobs2.graphai.eu/jobs/de-ber-sw-1",
+  },
+  {
+    job_key: "dk-cph-hw-1",
+    title: "Avionics Hardware Engineer",
+    company: "Graphai Demo",
+    country_iso2: "DK",
+    city: "Copenhagen",
+    specialties: ["hardware", "avionics"],
+    salary_min: 70000,
+    salary_max: 98000,
+    currency: "EUR",
+    url: "https://jobs2.graphai.eu/jobs/dk-cph-hw-1",
+  },
 ]
 
 function match(row, { country, city, specialty } = {}) {
