@@ -1,0 +1,6 @@
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "cd railway && npx --yes playwright@1.56.1 install chromium && npx --yes playwright@1.56.1 test --config=playwright.config.mjs"
+restartPolicyType = "ON_FAILURE"

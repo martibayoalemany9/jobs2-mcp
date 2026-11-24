@@ -1,6 +1,7 @@
 import { AuthError } from "./auth.mjs"
 import { TOOL_DEFS, callTool, listToolsForToken } from "./tools.mjs"
 import { tokenFromHeaders } from "./auth.mjs"
+import { captureException } from "./sentry.mjs"
 
 export async function handleJsonRpc(body, headers = {}) {
   const id = body?.id ?? null
@@ -40,6 +41,7 @@ export async function handleJsonRpc(body, headers = {}) {
       error: { code: -32601, message: `Method not found: ${method}` },
     }
   } catch (err) {
+    if (!(err instanceof AuthError)) await captureException(err)
     const status = err instanceof AuthError ? err.status : 500
     const code = err instanceof AuthError && err.status === 402 ? -32002 : -32001
     return {

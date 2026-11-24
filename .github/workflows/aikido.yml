@@ -12,7 +12,7 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Aikido PR scan
         uses: AikidoSec/github-actions-workflow@v1.0.13
         with:
@@ -24,16 +24,19 @@ jobs:
           fail-on-secrets-scan: true
           minimum-severity: HIGH
           timeout-seconds: 180
+          post-scan-status-comment: "on"
           github-token: ${{ secrets.GITHUB_TOKEN }}
   aikido-release:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Aikido scan-release
         env:
           TOKEN_AIKIDO_CI_CD: ${{ secrets.TOKEN_AIKIDO_CI_CD }}
-        run: npx --yes @aikidosec/ci-api-client scan-release jobs2-mcp ${{ github.sha }} --apikey "$TOKEN_AIKIDO_CI_CD" || true
+        run: |
+          npx --yes @aikidosec/ci-api-client scan-release jobs2-mcp "$GITHUB_SHA" --apikey "$TOKEN_AIKIDO_CI_CD" \
+            --fail-on-sast-scan --fail-on-iac-scan --fail-on-secrets-scan || true

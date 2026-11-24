@@ -54,7 +54,10 @@ test("salary table includes ranges and specialties", async () => {
 
 test("json-rpc tools/list requires login", async () => {
   const denied = await handleJsonRpc({ jsonrpc: "2.0", id: 1, method: "tools/list" }, {})
-  assert.equal(denied.error.data.status, 401)
+  assert.deepEqual(
+    denied.result.tools.map((x) => x.name),
+    ["login"],
+  )
   const t = issueToken({ email: "a@b.c", plan: "mcp_supabase" })
   const ok = await handleJsonRpc({ jsonrpc: "2.0", id: 2, method: "tools/list" }, { authorization: `Bearer ${t}` })
   assert.ok(ok.result.tools.some((x) => x.name === "search_jobs"))

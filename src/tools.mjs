@@ -4,7 +4,15 @@ import { PLANS } from "./plans.mjs"
 import { jobsMarkdown, specialtiesMarkdown } from "./table.mjs"
 import { extractPayment, settleX402, x402ToolError } from "./x402.mjs"
 
+const JOBS2_SITE = process.env.JOBS2_BASE_URL || "https://jobs2.graphai.eu"
+
 export const TOOL_DEFS = [
+  {
+    name: "login",
+    description:
+      "Pair with jobs2.graphai.eu: open /mcp, read the number on the web, pass it here as code. Returns a Bearer token and Grok config.",
+    inputSchema: { type: "object", properties: { code: { type: "string", description: "8-digit number from the website" } } },
+  },
   {
     name: "search_jobs",
     description:
@@ -80,6 +88,24 @@ async function sessionFor(name, token, params, headers) {
 }
 
 export async function callTool(name, args, token, params = {}, headers = {}) {
+  if (name === "login") {
+    const code = String(args?.code || "").trim()
+    if (!code) {
+      return md(
+        "Open https://jobs2.graphai.eu/mcp while signed in. Enter the **number on the web** as `login` argument `code`.",
+      )
+    }
+    const r = await fetch(`${JOBS2_SITE}/api/mcp/pair`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "claim", code }),
+    })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) return md(`login failed: ${j.error || r.status}`)
+    return md(
+      `Logged in as ${j.email} plan ${j.plan}\n\nPut this in ~/.grok/config.toml:\n\n\`\`\`toml\n${j.grok_toml}\n\`\`\`\n\nToken: \`${j.token}\``,
+    )
+  }
   const gate = await sessionFor(name, token, params, headers)
   if (gate.error) return gate.error
   const session = gate.session
@@ -117,7 +143,12 @@ export async function callTool(name, args, token, params = {}, headers = {}) {
 }
 
 export function listToolsForToken(token) {
-  const session = authorize(token, "list_specialties")
-  const plan = PLANS[session.plan]
-  return TOOL_DEFS.filter((t) => plan.tools.includes(t.name))
+  const loginTool = TOOL_DEFS.filter((t) => t.name === "login")
+  try {
+    const session = authorize(token, "list_specialties")
+    const plan = PLANS[session.plan]
+    return loginTool.concat(TOOL_DEFS.filter((t) => plan.tools.includes(t.name)))
+  } catch {
+    return loginTool
+  }
 }
