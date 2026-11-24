@@ -6,7 +6,8 @@ The server **requires login or x402 payment**. `tools/list` without a Bearer tok
 
 **x402 credentials on this Mac:** there is no `X402_PAY_TO`, CDP API key, or funded USDC wallet in `~/.env`. Live Coinbase facilitator settlement cannot run until you set `X402_PAY_TO` (Base address that receives USDC). Until then the seller advertises Base Sepolia USDC quotes and accepts a **dev HMAC mock** payload (`payload.kind = jobs2-hmac`) for tests. Grok on this laptop uses the `local-operator` subscription sentinel and does not need to pay.
 
-Remote URL (after Vercel deploy): `https://mcp.jobs2.graphai.eu/mcp`  
+Official registry: [`eu.graphai/jobs2`](https://registry.modelcontextprotocol.io/) (`server.json`, streamable HTTP).  
+Remote URL: `https://jobs2-mcp.vercel.app/mcp`  
 Setup UI: `https://jobs2.graphai.eu/mcp`  
 Billing (web + MCP together): `https://jobs2.graphai.eu/?view=invoices`
 

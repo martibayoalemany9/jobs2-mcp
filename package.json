@@ -9,6 +9,7 @@
   },
   "scripts": {
     "test": "node --test src/*.test.mjs",
+    "test:live": "MCP_LIVE=1 node --test src/live-remote.test.mjs",
     "start": "node src/stdio.mjs",
     "http": "node src/http.mjs"
   },

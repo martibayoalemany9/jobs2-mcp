@@ -1,0 +1,32 @@
+version: 2.1
+orbs:
+  node: circleci/node@7.1.1
+jobs:
+  unit:
+    docker:
+      - image: cimg/node:22.11
+    steps:
+      - checkout
+      - run: npm test
+  live:
+    docker:
+      - image: cimg/node:22.11
+    steps:
+      - checkout
+      - run:
+          name: Live MCP handshake
+          command: MCP_LIVE=1 npm run test:live
+workflows:
+  test:
+    jobs:
+      - unit
+      - live
+  scheduled-live:
+    triggers:
+      - schedule:
+          cron: "0 */6 * * *"
+          filters:
+            branches:
+              only: [main]
+    jobs:
+      - live

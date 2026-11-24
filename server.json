@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "eu.graphai/jobs2",
+  "title": "Jobs2 Graphai",
+  "description": "Job search MCP for jobs2.graphai.eu. Login or x402. Markdown tables.",
+  "repository": {
+    "url": "https://github.com/martibayoalemany9/jobs2-mcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "websiteUrl": "https://jobs2.graphai.eu/mcp",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://jobs2-mcp.vercel.app/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer token from jobs2.graphai.eu/mcp pairing or JOBS2_MCP_TOKEN",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
