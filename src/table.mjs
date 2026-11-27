@@ -11,7 +11,7 @@ export function markdownTable(headers, rows) {
   return `${head}\n${sep}\n${body}`
 }
 
-export function jobsMarkdown(jobs, { includeSalary = false, plan, store, email } = {}) {
+export function jobsMarkdown(jobs, { includeSalary = false, plan, store, email, page, pages, pageSize, matched, next_page, hasMore } = {}) {
   const headers = includeSalary
     ? ["country", "city", "title", "company", "specialties", "salary_min", "salary_max", "url"]
     : ["country", "city", "title", "company", "specialties", "url"]
@@ -22,10 +22,22 @@ export function jobsMarkdown(jobs, { includeSalary = false, plan, store, email }
     return [...base, j.url || ""]
   })
   const table = rows.length ? markdownTable(headers, rows) : "_no matching jobs_"
-  const meta = [`plan: ${plan || "—"}`, store ? `store: ${store}` : null, email ? `user: ${email}` : null, `rows: ${rows.length}`]
+  const meta = [
+    `plan: ${plan || "—"}`,
+    store ? `store: ${store}` : null,
+    email ? `user: ${email}` : null,
+    `rows: ${rows.length}`,
+    Number.isFinite(matched) ? `matched: ${matched}` : null,
+    Number.isFinite(page) ? `page: ${page}/${pages || 1}` : null,
+    Number.isFinite(pageSize) ? `page_size: ${pageSize}` : null,
+    hasMore ? `next_page: ${next_page}` : "next_page: —",
+  ]
     .filter(Boolean)
     .join(" · ")
-  return `${meta}\n\n${table}`
+  const pager = hasMore
+    ? `\n\nPass \`page: ${next_page}\` and the same \`page_size\` to fetch the next slice.`
+    : `\n\nEnd of results (no further page).`
+  return `${meta}\n\n${table}${pager}`
 }
 
 export function specialtiesMarkdown(list, { plan, email } = {}) {

@@ -1,5 +1,6 @@
 import { createServer } from "node:http"
 import { handleJsonRpc } from "./rpc.mjs"
+import { authorizationServerDiscoveryUrls, protectedResourceMetadata, wwwAuthenticate } from "./oauth.mjs"
 
 function send(res, status, obj, extra = {}) {
   const body = obj == null ? "" : JSON.stringify(obj)
@@ -19,6 +20,14 @@ export async function handleHttp(req, res) {
     return
   }
   const url = new URL(req.url || "/", "http://localhost")
+  if (req.method === "GET" && (url.pathname === "/.well-known/oauth-protected-resource" || url.pathname === "/.well-known/oauth-protected-resource/mcp")) {
+    send(res, 200, protectedResourceMetadata())
+    return
+  }
+  if (req.method === "GET" && url.pathname === "/.well-known/oauth-authorization-server") {
+    send(res, 200, authorizationServerDiscoveryUrls())
+    return
+  }
   if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/health")) {
     send(res, 200, { ok: true, name: "jobs2-mcp", transport: "streamable-http" })
     return
@@ -38,7 +47,7 @@ export async function handleHttp(req, res) {
   }
   const out = await handleJsonRpc(body, req.headers)
   if (out?.error?.data?.status === 401) {
-    send(res, 401, out)
+    send(res, 401, out, { "WWW-Authenticate": wwwAuthenticate() })
     return
   }
   const paid = out?.result?.structuredContent

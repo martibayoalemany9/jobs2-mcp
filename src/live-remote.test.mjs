@@ -40,6 +40,7 @@ test("jobs2 unsigned tools/list is login only", { skip: !live }, async () => {
   const names = (body.result?.tools || []).map((t) => t.name)
   assert.ok(names.includes("login"))
   assert.equal(names.includes("search_jobs"), false)
+  // subscribe is listed once this server revision is deployed
 })
 
 test("jobs2 registry listing eu.graphai/jobs2", { skip: !live }, async () => {

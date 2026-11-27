@@ -8,6 +8,7 @@ jobs:
     steps:
       - checkout
       - run: npm test
+      - run: python3 -m py_compile scripts/install-mcp.py
   live:
     docker:
       - image: cimg/node:22.11

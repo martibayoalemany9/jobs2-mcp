@@ -12,11 +12,11 @@
   "remotes": [
     {
       "type": "streamable-http",
-      "url": "https://jobs2-mcp.vercel.app/mcp",
+      "url": "https://mcp.jobs2.graphai.eu/mcp",
       "headers": [
         {
           "name": "Authorization",
-          "description": "Bearer token from jobs2.graphai.eu/mcp pairing or JOBS2_MCP_TOKEN",
+          "description": "OAuth 2.1 access token from Clerk (audience https://mcp.jobs2.graphai.eu/mcp) or HMAC token from pairing / JOBS2_MCP_TOKEN",
           "isRequired": false,
           "isSecret": true
         }

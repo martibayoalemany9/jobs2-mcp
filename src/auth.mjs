@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto"
 import { PLANS, planAllowsTool } from "./plans.mjs"
+import { isJwt, verifyClerkJwt } from "./oauth.mjs"
 
 export class AuthError extends Error {
   constructor(code, message, status = 401) {
@@ -13,7 +14,7 @@ function secret() {
   return String(process.env.JOBS2_MCP_SIGNING_SECRET || process.env.JOBS2_MCP_TOKEN_SECRET || "dev-jobs2-mcp")
 }
 
-export function issueToken({ email, plan = "mcp_supabase", expMs = 30 * 24 * 3600_000 } = {}) {
+export function issueToken({ email, plan = "free", expMs = 30 * 24 * 3600_000 } = {}) {
   const body = {
     email: String(email || "").trim().toLowerCase(),
     plan,
@@ -26,18 +27,17 @@ export function issueToken({ email, plan = "mcp_supabase", expMs = 30 * 24 * 360
   return `${payload}.${sig}`
 }
 
-export function verifyToken(token) {
-  const raw = String(token || "").trim().replace(/^Bearer\s+/i, "")
-  if (!raw) throw new AuthError("missing_token", "Authorization Bearer token required")
+export function verifyHmacToken(raw) {
   if (raw === "local-operator" && process.env.JOBS2_MCP_ALLOW_LOCAL !== "0") {
     return {
       email: "martibayoalemany@gmail.com",
       plan: "web_studio",
       exp: Date.now() + 86400_000,
+      via: "hmac",
     }
   }
   const [payload, sig] = raw.split(".")
-  if (!payload || !sig) throw new AuthError("bad_token", "malformed token")
+  if (!payload || !sig || raw.split(".").length !== 2) throw new AuthError("bad_token", "malformed token")
   const expect = createHmac("sha256", secret()).update(payload).digest("base64url")
   const a = Buffer.from(sig)
   const b = Buffer.from(expect)
@@ -45,11 +45,26 @@ export function verifyToken(token) {
   const body = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"))
   if (!body.email || !PLANS[body.plan]) throw new AuthError("bad_token", "invalid claims")
   if (body.exp < Date.now()) throw new AuthError("expired", "token expired")
-  return body
+  return { ...body, via: "hmac" }
 }
 
-export function authorize(token, tool) {
-  const session = verifyToken(token)
+export async function verifyToken(token) {
+  const raw = String(token || "").trim().replace(/^Bearer\s+/i, "")
+  if (!raw) throw new AuthError("missing_token", "Authorization Bearer token required")
+  if (isJwt(raw)) {
+    try {
+      const session = await verifyClerkJwt(raw)
+      if (!PLANS[session.plan]) session.plan = "free"
+      return session
+    } catch (err) {
+      throw new AuthError("bad_token", err.message || "invalid oauth token")
+    }
+  }
+  return verifyHmacToken(raw)
+}
+
+export async function authorize(token, tool) {
+  const session = await verifyToken(token)
   if (!planAllowsTool(session.plan, tool)) {
     throw new AuthError("payment_required", `plan ${session.plan} cannot call ${tool}`, 402)
   }

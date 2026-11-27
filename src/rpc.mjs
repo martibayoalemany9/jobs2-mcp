@@ -23,7 +23,7 @@ export async function handleJsonRpc(body, headers = {}) {
       return null
     }
     if (method === "tools/list") {
-      const tools = listToolsForToken(token)
+      const tools = await listToolsForToken(token)
       return { jsonrpc: "2.0", id, result: { tools } }
     }
     if (method === "tools/call") {
