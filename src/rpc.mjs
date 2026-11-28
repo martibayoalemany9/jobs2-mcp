@@ -1,7 +1,27 @@
-import { AuthError } from "./auth.mjs"
+import { AuthError, verifyToken } from "./auth.mjs"
 import { TOOL_DEFS, callTool, listToolsForToken } from "./tools.mjs"
 import { tokenFromHeaders } from "./auth.mjs"
 import { captureException } from "./sentry.mjs"
+import { buildNotaryRecord, publishNotary, resultMetaFromTool } from "./notary.mjs"
+
+async function note(headers, extra) {
+  let email = ""
+  let plan = ""
+  try {
+    const s = await verifyToken(tokenFromHeaders(headers))
+    email = s.email
+    plan = s.plan
+  } catch {
+    /* unsigned */
+  }
+  const rec = buildNotaryRecord({
+    ...extra,
+    email,
+    plan: extra.plan || plan,
+    ip: headers["x-forwarded-for"] || headers["x-real-ip"] || "",
+  })
+  void publishNotary(rec)
+}
 
 export async function handleJsonRpc(body, headers = {}) {
   const id = body?.id ?? null
@@ -30,6 +50,13 @@ export async function handleJsonRpc(body, headers = {}) {
       const name = body?.params?.name
       const args = body?.params?.arguments || {}
       const result = await callTool(name, args, token, body?.params || {}, headers)
+      await note(headers, {
+        method,
+        tool: name,
+        args,
+        result: resultMetaFromTool(name, result),
+        status: result?.isError ? "error" : "ok",
+      })
       return { jsonrpc: "2.0", id, result }
     }
     if (method === "ping") {

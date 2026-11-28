@@ -21,7 +21,7 @@ export const TOOL_DEFS = [
   {
     name: "login",
     description:
-      "Pair with jobs2.graphai.eu: open /mcp, read the number on the web, pass it here as code. Returns a Bearer token. Authorization is generated on login; do not paste YOUR_TOKEN beforehand.",
+      "Pair with jobs2.graphai.eu: open /mcp, read the number on the web, pass it here as code. Returns a Bearer token generated on login. Leave Authorization commented until then.",
     inputSchema: { type: "object", properties: { code: { type: "string", description: "8-digit number from the website" } } },
   },
   {
@@ -39,7 +39,7 @@ export const TOOL_DEFS = [
   {
     name: "search_jobs",
     description:
-      "Query jobs. Operator/paid: country, specialty, title, page_size, page (full catalog). Free (martibayoalemany4): country only, 50 rows, one page.",
+      "Query jobs. Subscribed user: country, specialty, title, page_size, page (full catalog). Free user, no subscription: country only, 50 rows, one page.",
     inputSchema: { type: "object", properties: SEARCH_PROPS },
   },
   {
